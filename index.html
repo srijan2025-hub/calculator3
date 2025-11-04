@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unit Price & Quantity Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --color-primary-light: 56 189 248; /* sky-400 */
+      --color-primary-dark: 14 165 233;  /* sky-500 */
+      --color-bg-light: 255 255 255;
+      --color-bg-dark: 0 0 0; /* Pure AMOLED black */
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.5s, color 0.5s;
+      background-color: rgb(var(--color-bg-light));
+    }
+
+    body.dark {
+      background-color: rgb(var(--color-bg-dark));
+      color: #f3f4f6;
+    }
+
+    .card {
+      background-color: white;
+      transition: background-color 0.4s, color 0.4s;
+    }
+
+    body.dark .card {
+      background-color: #111;
+      color: #f3f4f6;
+    }
+
+    input, select {
+      transition: background-color 0.4s, color 0.4s, border-color 0.4s;
+    }
+
+    body.dark input, 
+    body.dark select {
+      background-color: #000;
+      color: #f3f4f6;
+      border-color: #333;
+    }
+
+    /* Animated dark/light toggle */
+    .toggle-wrapper {
+      position: relative;
+      width: 50px;
+      height: 26px;
+      background-color: #ddd;
+      border-radius: 9999px;
+      transition: background-color 0.4s;
+      cursor: pointer;
+    }
+
+    .toggle-wrapper.dark {
+      background-color: rgb(var(--color-primary-dark));
+    }
+
+    .toggle-circle {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 22px;
+      height: 22px;
+      background-color: white;
+      border-radius: 50%;
+      transition: transform 0.4s cubic-bezier(0.45, 0, 0.55, 1);
+    }
+
+    .toggle-wrapper.dark .toggle-circle {
+      transform: translateX(24px);
+    }
+
+    /* Mode toggle animation */
+    .mode-toggle-button {
+      transition: all 0.3s ease-in-out;
+    }
+
+    .mode-toggle-active {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+  </style>
+</head>
+<body class="light theme-quantity">
+  <div class="min-h-screen flex items-center justify-center p-4">
+    <div class="card w-full max-w-lg p-6 md:p-8 rounded-xl shadow-2xl relative">
+
+      <!-- Dark Mode Toggle -->
+      <div class="absolute top-4 right-4 flex items-center space-x-2">
+        <div id="themeToggle" class="toggle-wrapper" onclick="toggleTheme()">
+          <div class="toggle-circle"></div>
+        </div>
+      </div>
+
+      <h1 class="text-3xl font-extrabold mb-6 mt-8 text-center text-sky-500">Unit Converter</h1>
+
+      <!-- Mode Toggle -->
+      <div class="flex rounded-lg p-1 mb-8 shadow-md border border-sky-500 transition-colors duration-300">
+        <button id="mode-quantity" onclick="setMode('quantity')" class="mode-toggle-button flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-300 mode-toggle-active bg-sky-500 text-white">
+          Calculate Quantity
+        </button>
+        <button id="mode-amount" onclick="setMode('amount')" class="mode-toggle-button flex-1 py-2 text-sm font-semibold rounded-md transition-all duration-300 text-gray-600 dark:text-gray-300">
+          Calculate Amount
+        </button>
+      </div>
+
+      <!-- Inputs -->
+      <div id="quantity-inputs" class="space-y-6">
+        <div class="budget-field">
+          <label for="budget" class="block text-sm font-medium mb-1">Your Budget (₹)</label>
+          <input type="number" id="budget" placeholder="e.g., 500" class="w-full p-3 border rounded-lg text-gray-900" oninput="calculate()">
+        </div>
+
+        <div class="flex space-x-4">
+          <div class="flex-grow">
+            <label for="price-value" class="block text-sm font-medium mb-1">Price Per Unit (₹)</label>
+            <input type="number" id="price-value" placeholder="e.g., 100" class="w-full p-3 border rounded-lg text-gray-900" oninput="calculate()">
+          </div>
+          <div class="w-32">
+            <label for="price-unit" class="block text-sm font-medium mb-1">Unit</label>
+            <select id="price-unit" class="w-full p-3 border rounded-lg" onchange="calculate()">
+              <option value="kg">₹/kg</option>
+              <option value="gram">₹/gram</option>
+              <option value="100g">₹/100 Gram</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="purchase-field">
+          <label for="quantity-value" class="block text-sm font-medium mb-1">Quantity You Wish To Purchase</label>
+          <div class="flex space-x-4">
+            <div class="flex-grow">
+              <input type="number" id="quantity-value" placeholder="e.g., 500" class="w-full p-3 border rounded-lg text-gray-900" oninput="calculate()">
+            </div>
+            <div class="w-32">
+              <select id="quantity-unit" class="w-full p-3 border rounded-lg" onchange="calculate()">
+                <option value="gram">Gram</option>
+                <option value="kg">Kg</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Result -->
+      <div class="mt-8 p-4 rounded-xl text-center bg-sky-500 text-white shadow-lg transition-all duration-300">
+        <p id="result-label" class="text-sm font-light uppercase tracking-wider mb-1">Max Quantity You Can Buy:</p>
+        <p id="result-value" class="text-4xl font-bold">0.00</p>
+        <p id="result-unit" class="text-lg font-semibold">grams</p>
+      </div>
+
+      <p class="text-xs text-center mt-6 text-gray-500 dark:text-gray-400">1 kg = 1000 grams</p>
+
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    let currentMode = 'quantity';
+    let currentTheme = 'light';
+
+    function getPricePerGram(price, unit) {
+      switch (unit) {
+        case 'kg': return price / 1000;
+        case 'gram': return price;
+        case '100g': return price / 100;
+        default: return 0;
+      }
+    }
+
+    function getTotalGrams(quantity, unit) {
+      return unit === 'kg' ? quantity * 1000 : quantity;
+    }
+
+    function calculate() {
+      const priceValue = parseFloat($('price-value').value) || 0;
+      const priceUnit = $('price-unit').value;
+      const pricePerGram = getPricePerGram(priceValue, priceUnit);
+      const resultValue = $('result-value');
+      const resultUnit = $('result-unit');
+      const resultLabel = $('result-label');
+
+      if (pricePerGram <= 0) {
+        resultValue.textContent = '0.00';
+        return;
+      }
+
+      if (currentMode === 'quantity') {
+        const budget = parseFloat($('budget').value) || 0;
+        const maxGrams = budget / pricePerGram;
+
+        if (maxGrams >= 1000) {
+          resultValue.textContent = (maxGrams / 1000).toFixed(3);
+          resultUnit.textContent = 'kg';
+        } else {
+          resultValue.textContent = maxGrams.toFixed(2);
+          resultUnit.textContent = 'grams';
+        }
+        resultLabel.textContent = 'Max Quantity You Can Buy:';
+      } else {
+        const quantityValue = parseFloat($('quantity-value').value) || 0;
+        const quantityUnit = $('quantity-unit').value;
+        const totalGrams = getTotalGrams(quantityValue, quantityUnit);
+        const totalCost = totalGrams * pricePerGram;
+
+        resultValue.textContent = totalCost.toFixed(2);
+        resultUnit.textContent = '₹';
+        resultLabel.textContent = 'Estimated Total Cost:';
+      }
+    }
+
+    function setMode(mode) {
+      currentMode = mode;
+      const qBtn = $('mode-quantity');
+      const aBtn = $('mode-amount');
+      const budgetField = document.querySelector('.budget-field');
+      const purchaseField = document.querySelector('.purchase-field');
+
+      if (mode === 'quantity') {
+        qBtn.classList.add('mode-toggle-active', 'bg-sky-500', 'text-white');
+        aBtn.classList.remove('mode-toggle-active', 'bg-sky-500', 'text-white');
+        aBtn.classList.add('text-gray-600', 'dark:text-gray-300');
+        budgetField.style.display = 'block';
+        purchaseField.style.display = 'none';
+      } else {
+        aBtn.classList.add('mode-toggle-active', 'bg-sky-500', 'text-white');
+        qBtn.classList.remove('mode-toggle-active', 'bg-sky-500', 'text-white');
+        qBtn.classList.add('text-gray-600', 'dark:text-gray-300');
+        budgetField.style.display = 'none';
+        purchaseField.style.display = 'block';
+      }
+
+      calculate();
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const toggle = document.getElementById('themeToggle');
+
+      if (currentTheme === 'light') {
+        body.classList.add('dark');
+        toggle.classList.add('dark');
+        currentTheme = 'dark';
+      } else {
+        body.classList.remove('dark');
+        toggle.classList.remove('dark');
+        currentTheme = 'light';
+      }
+    }
+
+    window.onload = () => {
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (prefersDark) toggleTheme();
+      setMode('quantity');
+    };
+  </script>
+</body>
+</html>
