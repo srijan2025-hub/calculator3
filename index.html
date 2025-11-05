@@ -20,7 +20,11 @@
       --color-bg-light: 255 255 255;
       --color-bg-dark: 0 0 0;
     }
-    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; transition: background-color .5s, color .5s; background: rgb(var(--color-bg-light)); }
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      transition: background-color .5s, color .5s;
+      background: rgb(var(--color-bg-light));
+    }
     body.dark { background: rgb(var(--color-bg-dark)); color: #f3f4f6; }
     .card { background: #fff; transition: background-color .4s, color .4s; }
     body.dark .card { background: #111; color: #f3f4f6; }
@@ -33,11 +37,21 @@
     .mode-toggle-button { transition: all .3s ease-in-out; }
     .mode-toggle-active { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,.15); }
     .install-hint { display:none; }
+
+    /* ===== Dynamic colors per mode (super simple) ===== */
+    body[data-mode="quantity"] { --main-color: #0ea5e9; }  /* sky-500 */
+    body[data-mode="amount"]   { --main-color: #f59e0b; }  /* amber-500 */
+
+    .colored-text   { color: var(--main-color) !important; transition: color .3s ease; }
+    .colored-bg     { background-color: var(--main-color) !important; color: #fff !important; transition: background-color .3s ease; }
+    .colored-border { border: 2px solid var(--main-color) !important; transition: border-color .3s ease; }
   </style>
 </head>
-<body class="light theme-quantity">
+
+<!-- Start in quantity mode; data-mode drives all colors -->
+<body data-mode="quantity" class="light">
   <div class="min-h-screen flex items-center justify-center p-4">
-    <div class="card w-full max-w-lg p-6 md:p-8 rounded-xl shadow-2xl relative">
+    <div class="card w-full max-w-lg p-6 md:p-8 rounded-xl shadow-2xl relative colored-border">
 
       <!-- Dark Mode Toggle -->
       <div class="absolute top-4 right-4 flex items-center space-x-2">
@@ -46,14 +60,19 @@
         </div>
       </div>
 
-      <h1 class="text-3xl font-extrabold mb-6 mt-8 text-center text-sky-500">Unit Converter</h1>
+      <!-- Title uses dynamic color -->
+      <h1 class="text-3xl font-extrabold mb-6 mt-8 text-center colored-text">Unit Converter</h1>
 
-      <!-- Mode Toggle -->
-      <div class="flex rounded-lg p-1 mb-8 shadow-md border border-sky-500">
-        <button id="mode-quantity" onclick="setMode('quantity')" class="mode-toggle-button flex-1 py-2 text-sm font-semibold rounded-md mode-toggle-active bg-sky-500 text-white">
+      <!-- Mode Toggle (border also uses dynamic color) -->
+      <div class="flex rounded-lg p-1 mb-8 shadow-md colored-border">
+        <button id="mode-quantity"
+                onclick="setMode('quantity')"
+                class="mode-toggle-button flex-1 py-2 text-sm font-semibold rounded-md mode-toggle-active bg-sky-500 text-white">
           Calculate Quantity
         </button>
-        <button id="mode-amount" onclick="setMode('amount')" class="mode-toggle-button flex-1 py-2 text-sm font-semibold rounded-md text-gray-600 dark:text-gray-300">
+        <button id="mode-amount"
+                onclick="setMode('amount')"
+                class="mode-toggle-button flex-1 py-2 text-sm font-semibold rounded-md text-gray-600 dark:text-gray-300">
           Calculate Amount
         </button>
       </div>
@@ -96,8 +115,8 @@
         </div>
       </div>
 
-      <!-- Result -->
-      <div class="mt-8 p-4 rounded-xl text-center bg-sky-500 text-white shadow-lg transition-all duration-300">
+      <!-- Result uses dynamic background color -->
+      <div id="resultBox" class="mt-8 p-4 rounded-xl text-center colored-bg shadow-lg transition-all duration-300">
         <p id="result-label" class="text-sm font-light uppercase tracking-wider mb-1">Max Quantity You Can Buy:</p>
         <p id="result-value" class="text-4xl font-bold">0.00</p>
         <p id="result-unit" class="text-lg font-semibold">grams</p>
@@ -112,7 +131,7 @@
 
   <script>
     const $ = id => document.getElementById(id);
-    let currentMode='quantity',currentTheme='light';
+    let currentMode='quantity', currentTheme='light';
 
     function getPricePerGram(price,u){return u==='kg'?price/1000:u==='100g'?price/100:price;}
     function getTotalGrams(q,u){return u==='kg'?q*1000:q;}
@@ -135,21 +154,31 @@
       }
     }
 
+    /* SWITCH MODES + COLORS (only place you need to touch for behavior) */
     function setMode(m){
-      currentMode=m;
-      const qBtn=$('mode-quantity'),aBtn=$('mode-amount'),
+      currentMode = m;
+      const qBtn=$('mode-quantity'), aBtn=$('mode-amount'),
             b=document.querySelector('.budget-field'),
             p=document.querySelector('.purchase-field');
+
+      // 🌈 Single line: change all colors via CSS variable
+      document.body.setAttribute('data-mode', m);
+
       if(m==='quantity'){
+        // Buttons colors (tailwind classes for the buttons themselves)
         qBtn.classList.add('mode-toggle-active','bg-sky-500','text-white');
-        aBtn.classList.remove('mode-toggle-active','bg-sky-500','text-white');
+        qBtn.classList.remove('text-gray-600','dark:text-gray-300');
+        aBtn.classList.remove('mode-toggle-active','bg-amber-500','text-white');
         aBtn.classList.add('text-gray-600','dark:text-gray-300');
-        b.style.display='block';p.style.display='none';
+
+        b.style.display='block'; p.style.display='none';
       }else{
-        aBtn.classList.add('mode-toggle-active','bg-sky-500','text-white');
+        aBtn.classList.add('mode-toggle-active','bg-amber-500','text-white');
+        aBtn.classList.remove('text-gray-600','dark:text-gray-300');
         qBtn.classList.remove('mode-toggle-active','bg-sky-500','text-white');
         qBtn.classList.add('text-gray-600','dark:text-gray-300');
-        b.style.display='none';p.style.display='block';
+
+        b.style.display='none'; p.style.display='block';
       }
       calculate();
     }
