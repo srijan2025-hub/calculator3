@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Unit Price & Quantity Calculator</title>
 
-  <!-- PWA setup -->
-  <link rel="manifest" href="/calculator3/manifest.webmanifest">
-  <meta name="theme-color" content="#111111">
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#111111" />
 
+  <!-- UI (external; gets cached at runtime) -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
+
   <style>
     :root {
       --color-primary-light: 56 189 248;
@@ -18,35 +20,19 @@
       --color-bg-light: 255 255 255;
       --color-bg-dark: 0 0 0;
     }
-
-    body {
-      font-family: 'Inter', sans-serif;
-      transition: background-color 0.5s, color 0.5s;
-      background-color: rgb(var(--color-bg-light));
-    }
-    body.dark { background-color: rgb(var(--color-bg-dark)); color: #f3f4f6; }
-
-    .card { background-color: white; transition: background-color 0.4s, color 0.4s; }
-    body.dark .card { background-color: #111; color: #f3f4f6; }
-
-    input, select { transition: background-color 0.4s, color 0.4s, border-color 0.4s; }
-    body.dark input, body.dark select { background-color: #000; color: #f3f4f6; border-color: #333; }
-
-    .toggle-wrapper {
-      position: relative; width: 50px; height: 26px;
-      background-color: #ddd; border-radius: 9999px;
-      transition: background-color 0.4s; cursor: pointer;
-    }
-    .toggle-wrapper.dark { background-color: rgb(var(--color-primary-dark)); }
-    .toggle-circle {
-      position: absolute; top: 2px; left: 2px;
-      width: 22px; height: 22px; background-color: white; border-radius: 50%;
-      transition: transform 0.4s cubic-bezier(0.45,0,0.55,1);
-    }
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; transition: background-color .5s, color .5s; background: rgb(var(--color-bg-light)); }
+    body.dark { background: rgb(var(--color-bg-dark)); color: #f3f4f6; }
+    .card { background: #fff; transition: background-color .4s, color .4s; }
+    body.dark .card { background: #111; color: #f3f4f6; }
+    input,select { transition: background-color .4s, color .4s, border-color .4s; }
+    body.dark input, body.dark select { background: #000; color: #f3f4f6; border-color: #333; }
+    .toggle-wrapper { position:relative; width:50px; height:26px; background:#ddd; border-radius:9999px; transition:background-color .4s; cursor:pointer; }
+    .toggle-wrapper.dark { background: rgb(var(--color-primary-dark)); }
+    .toggle-circle { position:absolute; top:2px; left:2px; width:22px; height:22px; background:#fff; border-radius:50%; transition: transform .4s cubic-bezier(.45,0,.55,1); }
     .toggle-wrapper.dark .toggle-circle { transform: translateX(24px); }
-
-    .mode-toggle-button { transition: all 0.3s ease-in-out; }
-    .mode-toggle-active { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.15); }
+    .mode-toggle-button { transition: all .3s ease-in-out; }
+    .mode-toggle-active { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,.15); }
+    .install-hint { display:none; }
   </style>
 </head>
 <body class="light theme-quantity">
@@ -118,6 +104,9 @@
       </div>
 
       <p class="text-xs text-center mt-6 text-gray-500 dark:text-gray-400">1 kg = 1000 grams</p>
+
+      <!-- Install hint (optional) -->
+      <button id="installBtn" class="install-hint mt-6 mx-auto block px-4 py-2 rounded bg-sky-500 text-white">Install App</button>
     </div>
   </div>
 
@@ -171,14 +160,29 @@
       else{body.classList.remove('dark');toggle.classList.remove('dark');currentTheme='light';}
     }
 
-    window.onload=()=>{if(window.matchMedia('(prefers-color-scheme: dark)').matches)toggleTheme();setMode('quantity');};
-  </script>
+    // PWA registration + install prompt
+    let deferredPrompt=null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = $('installBtn');
+      btn.style.display = 'block';
+      btn.onclick = async () => {
+        btn.style.display = 'none';
+        await deferredPrompt.prompt();
+        deferredPrompt = null;
+      };
+    });
 
-  <!-- Register the service worker -->
-  <script>
-    if('serviceWorker' in navigator){
-      window.addEventListener('load',()=>navigator.serviceWorker.register('/calculator3/sw.js'));
-    }
+    window.onload=()=>{
+      if(window.matchMedia('(prefers-color-scheme: dark)').matches) toggleTheme();
+      setMode('quantity');
+
+      if('serviceWorker' in navigator){
+        navigator.serviceWorker.register('./sw.js', { scope: './' })
+          .catch(err => console.log('SW reg failed:', err));
+      }
+    };
   </script>
 </body>
 </html>
