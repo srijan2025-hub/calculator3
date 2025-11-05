@@ -1,9 +1,9 @@
 {
-  "id": "/calculator3/",
+  "id": "./",
   "name": "Unit Price & Quantity Calculator",
   "short_name": "Calculator",
-  "start_url": "/calculator3/",
-  "scope": "/calculator3/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#111111",
